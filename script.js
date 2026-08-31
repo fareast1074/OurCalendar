@@ -22,7 +22,8 @@ const firebaseConfig = {
     projectId: "trip-planner-edb3f",
     storageBucket: "trip-planner-edb3f.firebasestorage.app",
     messagingSenderId: "829260334284",
-    appId: "1:829260334284:web:58c69022a11fc0974ad01b"
+    appId: "1:829260334284:web:2387028c35baa339ce6e69",
+    measurementId: "G-6GHDBVXPVV"
 };
 
 let database = null;
@@ -33,7 +34,7 @@ try {
     console.error("Firebase startup structural protocol halted.", e);
 }
 
-let currentUser = localStorage.getItem('ourcalendarSharedCloudUser') || localStorage.getItem('ourcalendarSharedCloudUser') || null;
+let currentUser = localStorage.getItem('ourcalendarSharedCloudUser') || localStorage.getItem('broskiSharedCloudUser') || null;
 let currentDate = new Date();
 let selectedDate = new Date();
 let calendarEvents = {}; 
@@ -41,12 +42,9 @@ let baselineDataTrackingObject = null;
 let currentFilterScope = 'all'; 
 let filteredTargetUser = ''; 
 let systemMutedOnInit = true;   
-let activeEditingNode = { eventId: null };
-let currentCalendarView = localStorage.getItem('ourcalendarCalendarView') || localStorage.getItem('ourcalendarCalendarView') || 'month';
-if(currentCalendarView==='week') currentCalendarView='month';
-let browserNotificationsEnabled = localStorage.getItem('ourcalendarBrowserNotifications') === 'true' || localStorage.getItem('ourcalendarBrowserNotifications') === 'true'; 
+let activeEditingNode = { eventId: null }; 
 
-if(localStorage.getItem('ourcalendarDarkThemeActive') === 'true' || localStorage.getItem('ourcalendarDarkThemeActive') === 'true') {
+if(localStorage.getItem('ourcalendarDarkThemeActive') === 'true' || localStorage.getItem('broskiDarkThemeActive') === 'true') {
     document.body.classList.add('dark-mode');
 }
 
@@ -55,90 +53,8 @@ const monthsKey = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep"
 const fullMonthsKey = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const malayMonthsKey = ["januari", "februari", "mac", "april", "mei", "jun", "julai", "ogos", "september", "oktober", "november", "disember"];
 
-function escapeHTML(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, function(ch) {
-        return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[ch];
-    });
-}
-
-function getParticipantsArray(item) {
-    return item && item.participant ? item.participant.split(',').map(p => p.trim()).filter(Boolean) : [];
-}
-
-function buildInviteStatus(participants, previousStatus = {}) {
-    const status = { ...(previousStatus || {}) };
-    participants.forEach(name => { if (!status[name]) status[name] = 'pending'; });
-    if (currentUser) status[currentUser] = 'accepted';
-    Object.keys(status).forEach(name => {
-        if (name !== currentUser && !participants.includes(name)) delete status[name];
-    });
-    return status;
-}
-
-function buildInviteStatusHTML(item, eventId) {
-    const participants = getParticipantsArray(item);
-    const inviteStatus = item.inviteStatus || {};
-    if (participants.length === 0) return '';
-    const statusIcons = { accepted: '✅', declined: '❌', pending: '⏳' };
-    const chips = participants.map(name => {
-        const status = inviteStatus[name] || 'pending';
-        return `<span class="invite-status-chip status-${escapeHTML(status)}">${statusIcons[status] || '⏳'} @${escapeHTML(name)} ${escapeHTML(status)}</span>`;
-    }).join(' ');
-    const myStatus = inviteStatus[currentUser] || 'pending';
-    const actionButtons = participants.includes(currentUser) && item.owner !== currentUser && myStatus === 'pending'
-        ? `<span class="invite-action-cluster"><button onclick="respondToInvitation('${escapeHTML(eventId)}','accepted')">Accept</button><button onclick="respondToInvitation('${escapeHTML(eventId)}','declined')">Decline</button></span>`
-        : '';
-    return `<div class="invite-status-row">${chips} ${actionButtons}</div>`;
-}
-
-function triggerBrowserNotification(title, body) {
-    if (!browserNotificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
-    if (document.visibilityState === 'visible') return;
-    new Notification(title, { body, icon: 'OurCalendar.jpg', badge: 'OurCalendar.jpg' });
-}
-
-async function enableBrowserNotifications() {
-    if (!('Notification' in window)) {
-        triggerToastAlert('Browser notifications are not supported here.');
-        return;
-    }
-    const permission = await Notification.requestPermission();
-    browserNotificationsEnabled = permission === 'granted';
-    localStorage.setItem('ourcalendarBrowserNotifications', browserNotificationsEnabled);
-    triggerToastAlert(browserNotificationsEnabled ? 'Browser notifications enabled.' : 'Notification permission was not granted.');
-}
-
-function setCalendarView(view) {
-    currentCalendarView = view;
-    localStorage.setItem('ourcalendarCalendarView', view);
-    document.querySelectorAll('.view-pill').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
-    renderCalendar();
-}
-
-function buildExtendedMetaHTML(item) {
-    const chunks = [];
-    if (item.priority) chunks.push(`<span class="meta-chip priority-${escapeHTML(item.priority)}">⚡ ${escapeHTML(item.priority)}</span>`);
-    if (item.location) chunks.push(`<span class="meta-chip">📍 ${escapeHTML(item.location)}</span>`);
-    if (item.notes) chunks.push(`<span class="meta-chip notes-chip" title="${escapeHTML(item.notes)}">📝 Notes</span>`);
-    if (item.createdAt) chunks.push(`<span class="meta-chip">🧾 ${new Date(item.createdAt).toLocaleDateString()}</span>`);
-    return chunks.length ? `<div class="event-meta-row">${chunks.join('')}</div>` : '';
-}
-
-function eventMatchesDate(item, dateString) {
-    return item && item.startDate <= dateString && item.endDate >= dateString;
-}
-
-function passesScopeFilter(item) {
-    const participants = getParticipantsArray(item);
-    if (currentFilterScope === 'all') return true;
-    if (currentFilterScope === 'me') return item.owner === currentUser || participants.includes(currentUser);
-    if (currentFilterScope === 'specific') return item.owner === filteredTargetUser || participants.includes(filteredTargetUser);
-    return true;
-}
-
 window.onload = function() {
     fetchMalaysianHolidays(); 
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('service-worker.js').catch(console.error); }
     if (currentUser) { 
         bootApplicationView(); 
     }
@@ -227,6 +143,10 @@ function bootApplicationView() {
     establishLiveFirebaseListener();
 }
 
+// ----------------------------------------------------
+// UI Logic Upgrades: Custom Checkboxes & Select All
+// ----------------------------------------------------
+
 function loadParticipantCheckboxes() {
     if(database) {
         database.ref('users').on('value', snapshot => {
@@ -269,6 +189,7 @@ function toggleSelectAll(selectAllCheckbox) {
         toggleCheckboxStyle(cb);
     });
     
+    // Manage dynamic styling for the master toggle itself
     if(selectAllCheckbox.checked) {
         selectAllCheckbox.parentElement.classList.add('is-active');
     } else {
@@ -283,6 +204,7 @@ function updateParticipantField() {
     const selectedUsers = Array.from(checkboxes).map(cb => cb.value);
     document.getElementById('newEventParticipant').value = selectedUsers.join(', ');
     
+    // Automatically update the "Select All" checked state if users tick boxes manually
     const allCheckboxes = document.querySelectorAll('#participantCheckboxes .ourcalendar-checkbox');
     const selectAll = document.getElementById('selectAllOurCalendars');
     
@@ -295,6 +217,8 @@ function updateParticipantField() {
         }
     }
 }
+
+// ----------------------------------------------------
 
 function loadAdminUserList() {
     if(database) {
@@ -346,7 +270,7 @@ function executeProfileLogout() {
 
 function triggerToastAlert(message) {
     const toast = document.getElementById('networkToast');
-    toast.textContent = `⚡ ${message}`;
+    toast.innerHTML = `⚡ ${message}`;
     toast.style.display = 'block';
     setTimeout(() => { toast.style.display = 'none'; }, 3500);
 }
@@ -364,10 +288,8 @@ function establishLiveFirebaseListener() {
                             const participants = freshlyAddedObject.participant ? freshlyAddedObject.participant.split(',').map(p => p.trim()) : [];
                             if (participants.includes(currentUser)) {
                                 triggerToastAlert(`🔔 @${freshlyAddedObject.owner} mentioned you in a plan: ${freshlyAddedObject.title}`);
-                                triggerBrowserNotification('OurCalendar mention', `@${freshlyAddedObject.owner}: ${freshlyAddedObject.title}`);
                             } else {
                                 triggerToastAlert(`📅 New Event Added by @${freshlyAddedObject.owner}: ${freshlyAddedObject.title}`);
-                                triggerBrowserNotification('New OurCalendar plan', `@${freshlyAddedObject.owner}: ${freshlyAddedObject.title}`);
                             }
                         }
                     }
@@ -562,73 +484,62 @@ function calculateMonthlyMetrics() {
 function renderCalendar() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const daysContainer = document.getElementById('calendar-days');
-    if (!daysContainer) return;
-    daysContainer.innerHTML = '';
-    document.querySelectorAll('.view-pill').forEach(btn => btn.classList.toggle('active', btn.dataset.view === currentCalendarView));
-
-    const today = new Date();
-    const todayString = formatDateString(today.getFullYear(), today.getMonth(), today.getDate());
-    const hexMapColors = { personal: '#2e7d32', social: '#c2185b', work: '#283593', fitness: '#ef6c00', camping: '#a27b5c', hiking: '#3e4a3d' };
-
-    if (currentCalendarView === 'agenda') {
-        document.getElementById('month-year-label').innerText = `Agenda · ${monthNames[month]} ${year}`;
-        daysContainer.className = 'days-grid agenda-view-grid';
-        const upcoming = Object.entries(calendarEvents).filter(([id, ev]) => ev.endDate >= todayString && passesScopeFilter(ev))
-            .sort((a,b) => a[1].startDate.localeCompare(b[1].startDate) || (a[1].time || '00:00').localeCompare(b[1].time || '00:00')).slice(0, 30);
-        if (!upcoming.length) { daysContainer.innerHTML = '<div class="calendar-agenda-card">No upcoming plans found.</div>'; return; }
-        upcoming.forEach(([eventId, ev]) => {
-            const card = document.createElement('div');
-            card.className = `calendar-agenda-card cat-${ev.category || 'personal'}`;
-            card.innerHTML = `<strong>${escapeHTML(ev.title)}</strong><span>${escapeHTML(ev.startDate)}${ev.time ? ' · ' + escapeHTML(ev.time) : ''}</span><small>@${escapeHTML(ev.owner || 'unknown')}</small>${buildInviteStatusHTML(ev, eventId)}`;
-            daysContainer.appendChild(card);
-        });
-        return;
-    }
-
-    if (currentCalendarView === 'week') {
-        const weekStart = new Date(selectedDate);
-        weekStart.setDate(selectedDate.getDate() - selectedDate.getDay());
-        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
-        document.getElementById('month-year-label').innerText = `Week of ${monthNames[weekStart.getMonth()]} ${weekStart.getDate()}, ${weekStart.getFullYear()}`;
-        daysContainer.className = 'days-grid week-view-grid';
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
-            const dateString = formatDateString(d.getFullYear(), d.getMonth(), d.getDate());
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'day week-day-card';
-            if (dateString === todayString) dayDiv.classList.add('today');
-            if (dateString === formatDateString(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())) dayDiv.classList.add('selected');
-            const events = Object.values(calendarEvents).filter(ev => eventMatchesDate(ev, dateString) && passesScopeFilter(ev));
-            dayDiv.innerHTML = `<b>${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]} ${d.getDate()}</b><span>${events.length} plan(s)</span>`;
-            dayDiv.onclick = () => { selectedDate = d; currentDate = new Date(d); renderCalendar(); updateAgendaView(); };
-            daysContainer.appendChild(dayDiv);
-        }
-        return;
-    }
-
-    daysContainer.className = 'days-grid';
     document.getElementById('month-year-label').innerText = `${monthNames[month]} ${year}`;
+
     const firstDayIndex = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
+    const daysContainer = document.getElementById('calendar-days');
+    daysContainer.innerHTML = '';
+
     for (let i = 0; i < firstDayIndex; i++) {
-        const emptyDiv = document.createElement('div'); emptyDiv.className = 'day empty'; daysContainer.appendChild(emptyDiv);
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'day empty';
+        daysContainer.appendChild(emptyDiv);
     }
+
+    const today = new Date();
+    const hexMapColors = { personal: '#2e7d32', social: '#c2185b', work: '#283593', fitness: '#ef6c00', camping: '#a27b5c', hiking: '#3e4a3d' };
+
     for (let day = 1; day <= totalDays; day++) {
         const dayDiv = document.createElement('div');
         dayDiv.className = 'day';
-        dayDiv.appendChild(document.createTextNode(day));
+        dayDiv.innerText = day;
         const dateString = formatDateString(year, month, day);
-        if (fetchedHolidays[dateString]) { dayDiv.classList.add('holiday'); dayDiv.title = fetchedHolidays[dateString]; }
-        if (dateString === todayString) dayDiv.classList.add('today');
+
+        if (fetchedHolidays[dateString]) {
+            dayDiv.classList.add('holiday');
+            dayDiv.title = fetchedHolidays[dateString]; 
+        }
+
+        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) dayDiv.classList.add('today');
         if (day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear()) dayDiv.classList.add('selected');
+        
         let detectedCategoriesOnDate = new Set();
-        Object.values(calendarEvents).forEach(ev => { if(passesScopeFilter(ev) && eventMatchesDate(ev, dateString) && ev.category) detectedCategoriesOnDate.add(ev.category); });
+        
+        Object.values(calendarEvents).forEach(ev => {
+            let passScope = false;
+            const participants = ev.participant ? ev.participant.split(',').map(p => p.trim()) : [];
+            if (currentFilterScope === 'all') passScope = true;
+            else if (currentFilterScope === 'me' && (ev.owner === currentUser || participants.includes(currentUser))) passScope = true;
+            else if (currentFilterScope === 'specific' && (ev.owner === filteredTargetUser || participants.includes(filteredTargetUser))) passScope = true;
+
+            if(passScope && dateString >= ev.startDate && dateString <= ev.endDate) {
+                if (ev.category) detectedCategoriesOnDate.add(ev.category);
+            }
+        });
+
         if (detectedCategoriesOnDate.size > 0) {
-            const dotsContainer = document.createElement('div'); dotsContainer.className = 'dots-matrix-holder';
-            detectedCategoriesOnDate.forEach(cat => { const miniDot = document.createElement('span'); miniDot.className = 'micro-dot-node'; miniDot.style.backgroundColor = hexMapColors[cat] || '#b56576'; dotsContainer.appendChild(miniDot); });
+            const dotsContainer = document.createElement('div');
+            dotsContainer.className = 'dots-matrix-holder';
+            detectedCategoriesOnDate.forEach(cat => {
+                const miniDot = document.createElement('span');
+                miniDot.className = 'micro-dot-node';
+                miniDot.style.backgroundColor = hexMapColors[cat] || '#b56576';
+                dotsContainer.appendChild(miniDot);
+            });
             dayDiv.appendChild(dotsContainer);
         }
+
         dayDiv.onclick = () => selectDay(day);
         daysContainer.appendChild(dayDiv);
     }
@@ -693,13 +604,13 @@ function updateAgendaView() {
             durationHTML = `<span class="time-badge" style="background:rgba(0,0,0,0.04); font-size:0.7rem;">📅 ${parseInt(sD)}/${parseInt(sM)} → ${parseInt(eD)}/${parseInt(eM)}</span>`;
         }
 
-        const participants = getParticipantsArray(item);
-        let participantHTML = participants.length > 0 ? `<span class="participant-tag">with @${participants.map(escapeHTML).join(', @')}</span>` : '';
+        const participants = item.participant ? item.participant.split(',').map(p => p.trim()) : [];
+        let participantHTML = participants.length > 0 ? `<span class="participant-tag">with @${participants.join(', @')}</span>` : '';
         
         const isOwner = (item.owner === currentUser);
         const ownerBadgeClass = isOwner ? 'own-user' : 'foreign-user';
         const ownerLabelText = isOwner ? 'me' : `@${item.owner}`;
-        let ownerHTML = `<span class="owner-identity-pill ${ownerBadgeClass}">👑 ${escapeHTML(ownerLabelText)}</span>`;
+        let ownerHTML = `<span class="owner-identity-pill ${ownerBadgeClass}">👑 ${ownerLabelText}</span>`;
 
         let mentionBadgeHTML = '';
         if (participants.includes(currentUser)) {
@@ -716,8 +627,8 @@ function updateAgendaView() {
         li.innerHTML = `
             <div>
                 ${timeHTML} ${durationHTML}
-                <strong style="display:block; margin-top:2px;">${escapeHTML(item.title)}</strong>
-                ${participantHTML} ${ownerHTML} ${mentionBadgeHTML} ${buildInviteStatusHTML(item, eventId)} ${buildExtendedMetaHTML(item)} ${buildEventUtilityActions(eventId, item)}
+                <strong style="display:block; margin-top:2px;">${item.title}</strong>
+                ${participantHTML} ${ownerHTML} ${mentionBadgeHTML}
             </div>
             ${actionControlHTML}
         `;
@@ -743,10 +654,6 @@ function renderIncomingEventsPipeline() {
     pipelineContainer.innerHTML = '';
 
     const filterQuery = document.getElementById('incomingSearchInput').value.trim().toLowerCase();
-    const categoryFilter = document.getElementById('incomingCategoryFilter') ? document.getElementById('incomingCategoryFilter').value : '';
-    const startFilter = document.getElementById('incomingStartFilter') ? document.getElementById('incomingStartFilter').value : '';
-    const endFilter = document.getElementById('incomingEndFilter') ? document.getElementById('incomingEndFilter').value : '';
-    const mineOnly = document.getElementById('incomingMineOnly') ? document.getElementById('incomingMineOnly').checked : false;
     const referenceClock = new Date();
     const boundaryTodayString = formatDateString(referenceClock.getFullYear(), referenceClock.getMonth(), referenceClock.getDate());
 
@@ -754,19 +661,12 @@ function renderIncomingEventsPipeline() {
 
     Object.entries(calendarEvents).forEach(([eventId, item]) => {
         if (item.endDate >= boundaryTodayString) {
-            if (categoryFilter && item.category !== categoryFilter) return;
-            if (startFilter && item.endDate < startFilter) return;
-            if (endFilter && item.startDate > endFilter) return;
-            if (mineOnly && !passesScopeFilter(item)) return;
             const matchesTitle = (item.title || '').toLowerCase().includes(filterQuery);
             const participants = item.participant ? item.participant.split(',').map(p => p.trim().toLowerCase()) : [];
             const matchesParticipant = participants.some(p => p.includes(filterQuery));
             const matchesOwner = (item.owner || '').toLowerCase().includes(filterQuery);
-            const matchesLocation = (item.location || '').toLowerCase().includes(filterQuery);
-            const matchesNotes = (item.notes || '').toLowerCase().includes(filterQuery);
-            const matchesPriority = (item.priority || '').toLowerCase().includes(filterQuery);
 
-            if (!filterQuery || matchesTitle || matchesParticipant || matchesOwner || matchesLocation || matchesNotes || matchesPriority) {
+            if (!filterQuery || matchesTitle || matchesParticipant || matchesOwner) {
                 flattenedIncomingNodes.push({ eventId, ...item });
             }
         }
@@ -800,13 +700,13 @@ function renderIncomingEventsPipeline() {
         }
         
         let timeHTML = item.time ? `<span class="time-badge">${item.time}</span>` : '';
-        const participants = getParticipantsArray(item);
-        let participantHTML = participants.length > 0 ? `<span class="participant-tag">with @${participants.map(escapeHTML).join(', @')}</span>` : '';
+        const participants = item.participant ? item.participant.split(',').map(p => p.trim()) : [];
+        let participantHTML = participants.length > 0 ? `<span class="participant-tag">with @${participants.join(', @')}</span>` : '';
         
         const isOwner = (item.owner === currentUser);
         const ownerBadgeClass = isOwner ? 'own-user' : 'foreign-user';
         const ownerLabelText = isOwner ? 'me' : `@${item.owner}`;
-        let ownerHTML = `<span class="owner-identity-pill ${ownerBadgeClass}">👑 ${escapeHTML(ownerLabelText)}</span>`;
+        let ownerHTML = `<span class="owner-identity-pill ${ownerBadgeClass}">👑 ${ownerLabelText}</span>`;
 
         let mentionBadgeHTML = '';
         if (participants.includes(currentUser)) {
@@ -820,8 +720,8 @@ function renderIncomingEventsPipeline() {
         li.innerHTML = `
             <div>
                 ${dateBadgeHTML} ${timeHTML}
-                <strong style="display:block; margin-top:2px;">${escapeHTML(item.title)}</strong>
-                ${participantHTML} ${ownerHTML} ${mentionBadgeHTML} ${buildInviteStatusHTML(item, item.eventId)} ${buildExtendedMetaHTML(item)} ${buildEventUtilityActions(item.eventId, item)}
+                <strong style="display:block; margin-top:2px;">${item.title}</strong>
+                ${participantHTML} ${ownerHTML} ${mentionBadgeHTML}
             </div>
             ${actionControlHTML}
         `;
@@ -856,12 +756,7 @@ function addNewEvent() {
         endDate: eDateInput.value,
         time: timeInput.value.trim(),
         category: catSelect.value,
-        priority: document.getElementById('newEventPriority') ? document.getElementById('newEventPriority').value : 'normal',
-        location: document.getElementById('newEventLocation') ? document.getElementById('newEventLocation').value.trim() : '',
-        notes: document.getElementById('newEventNotes') ? document.getElementById('newEventNotes').value.trim() : '',
-        createdAt: new Date().toISOString(),
-        owner: currentUser,
-        inviteStatus: buildInviteStatus(getParticipantsArray({ participant: participantInput.value.trim() }))
+        owner: currentUser 
     };
 
     if (database) { database.ref('shared_events_v3').push(payload); }
@@ -869,6 +764,7 @@ function addNewEvent() {
     participantInput.value = ''; 
     timeInput.value = '';
     
+    // Uncheck and reset the styling of all checkboxes
     const selectAll = document.getElementById('selectAllOurCalendars');
     if(selectAll) { selectAll.checked = false; toggleCheckboxStyle(selectAll); }
     
@@ -889,19 +785,18 @@ function initiateInlineEdit(eventId) {
     document.getElementById('newEventEndDate').value = targetObject.endDate;
     document.getElementById('newEventTime').value = targetObject.time || '';
     document.getElementById('newEventCategory').value = targetObject.category || 'personal';
-    if (document.getElementById('newEventPriority')) document.getElementById('newEventPriority').value = targetObject.priority || 'normal';
-    if (document.getElementById('newEventLocation')) document.getElementById('newEventLocation').value = targetObject.location || '';
-    if (document.getElementById('newEventNotes')) document.getElementById('newEventNotes').value = targetObject.notes || '';
 
     const pInput = document.getElementById('newEventParticipant');
     pInput.value = targetObject.participant || '';
 
+    // Check the respective boxes and apply styles based on loaded string
     const pArray = targetObject.participant ? targetObject.participant.split(',').map(p => p.trim()) : [];
     document.querySelectorAll('#participantCheckboxes .ourcalendar-checkbox').forEach(cb => {
         cb.checked = pArray.includes(cb.value);
         toggleCheckboxStyle(cb);
     });
     
+    // Trigger to check if the Select All box should be checked
     updateParticipantField();
 
     const submitBtn = document.getElementById('submitActionBtn');
@@ -935,13 +830,7 @@ function processEventMutationUpdate() {
         endDate: eDateInput.value,
         time: timeInput.value.trim(),
         category: catSelect.value,
-        priority: document.getElementById('newEventPriority') ? document.getElementById('newEventPriority').value : 'normal',
-        location: document.getElementById('newEventLocation') ? document.getElementById('newEventLocation').value.trim() : '',
-        notes: document.getElementById('newEventNotes') ? document.getElementById('newEventNotes').value.trim() : '',
-        createdAt: calendarEvents[eventId]?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        owner: currentUser,
-        inviteStatus: buildInviteStatus(getParticipantsArray({ participant: participantInput.value.trim() }), calendarEvents[eventId]?.inviteStatus || {})
+        owner: currentUser 
     };
 
     if(database && updatedPayload.title) {
@@ -958,10 +847,8 @@ function resetFormMutatorState() {
     document.getElementById('newEventParticipant').value = '';
     document.getElementById('newEventTime').value = '';
     document.getElementById('newEventCategory').value = 'personal';
-    if (document.getElementById('newEventPriority')) document.getElementById('newEventPriority').value = 'normal';
-    if (document.getElementById('newEventLocation')) document.getElementById('newEventLocation').value = '';
-    if (document.getElementById('newEventNotes')) document.getElementById('newEventNotes').value = '';
 
+    // Uncheck and reset styles
     const selectAll = document.getElementById('selectAllOurCalendars');
     if(selectAll) { selectAll.checked = false; toggleCheckboxStyle(selectAll); }
     
@@ -979,13 +866,6 @@ function resetFormMutatorState() {
     submitBtn.classList.remove('editing-mode');
     
     document.getElementById('cancelActionBtn').classList.add('hidden');
-}
-
-function respondToInvitation(eventId, status) {
-    if (!database || !calendarEvents[eventId] || !currentUser) return;
-    database.ref(`shared_events_v3/${eventId}/inviteStatus/${currentUser}`).set(status).then(() => {
-        triggerToastAlert(`Invitation ${status}.`);
-    });
 }
 
 function deleteEvent(eventId) {
@@ -1273,7 +1153,7 @@ function processBotLogic(text) {
             const rangeMatch = text.match(/(?:until|to|hingga)\s+(\d+)\s*([a-zA-Z]*)/i);
             if (rangeMatch) {
                 endDayNum = parseInt(rangeMatch[1]);
-                if (rangeMatch[2]) { let m = checkMonthInText(rangeMatch[2].toLowerCase()); if (m !== null) endMonth = m; }
+                if (rangeMatch[2]) { let m = checkMonthInText(rangeMatch[2].toLowerCase()); if (m !== null) startMonth = m; }
                 else { endMonth = startMonth; }
             }
         } else {
@@ -1309,7 +1189,7 @@ function processBotLogic(text) {
             parsedCategory = 'hiking';
         }
 
-        const payload = { title, participant, startDate: startDateStr, endDate: endDateStr, time, category: parsedCategory, owner: currentUser, inviteStatus: buildInviteStatus(getParticipantsArray({ participant })) };
+        const payload = { title, participant, startDate: startDateStr, endDate: endDateStr, time, category: parsedCategory, owner: currentUser };
 
         if (database) { database.ref('shared_events_v3').push(payload); }
 
@@ -1321,59 +1201,4 @@ function processBotLogic(text) {
     }
 
     appendMessage("Unrecognized statement format. Type <code>help</code> to display matching functions.", 'bot');
-}
-
-/* OurCalendar Planner v3 enhancement layer: event metadata, export/import, ICS, duplicate, print agenda. */
-
-function buildEventUtilityActions(eventId, item) {
-    // Safe fallback stub method to prevent runtime ReferenceErrors during item rendering
-    return '';
-}
-
-function getVisibleUpcomingEvents() {
-    const today = new Date();
-    const todayString = formatDateString(today.getFullYear(), today.getMonth(), today.getDate());
-    return Object.entries(calendarEvents)
-        .filter(([id, ev]) => ev.endDate >= todayString && passesScopeFilter(ev))
-        .sort((a,b) => a[1].startDate.localeCompare(b[1].startDate) || (a[1].time || '00:00').localeCompare(b[1].time || '00:00'));
-}
-
-
-// Function to show/hide the developer control panel manually
-function toggleDeveloperPanel() {
-    const adminPanel = document.getElementById('developerAdminPanel');
-    if (!adminPanel) return;
-    
-    const isHidden = adminPanel.classList.toggle('hidden');
-    
-    // Optional: Keep active users list filled when turning panel on
-    if (!isHidden && typeof loadAdminUserList === 'function') {
-        loadAdminUserList();
-    }
-}
-
-// Controls background track playback
-function toggleMusic() {
-    const audio = document.getElementById('ourcalendarAudioEngine');
-    const musicBtn = document.getElementById('musicToggleBtn');
-    
-    if (!audio || !musicBtn) return;
-
-    if (audio.paused) {
-        // Modern browsers block autoplay until a user interacts with the page
-        audio.play().then(() => {
-            musicBtn.textContent = '⏸️'; // Change icon to pause when playing
-            if (typeof triggerToastAlert === 'function') {
-                triggerToastAlert('Playing track... 🎵');
-            }
-        }).catch(error => {
-            console.error("Playback restriction encountered:", error);
-            if (typeof triggerToastAlert === 'function') {
-                triggerToastAlert('Audio interaction required ⚠️');
-            }
-        });
-    } else {
-        audio.pause();
-        musicBtn.textContent = '🎵'; // Revert back to music icon when paused
-    }
 }
