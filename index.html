@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OurCalendar | By F4REAST</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <!-- Styles and Icons -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/jpg" href="OurCalendar.jpg">
+    <link rel="apple-touch-icon" href="OurCalendar.jpg">
+    <meta name="theme-color" content="#8f3f52">
+    
+    <!-- SEO and Meta Tags -->
+    <meta name="description" content="OurCalendar Calendar Pro - Stay organized with F4REAST.">
+    <meta property="og:title" content="OurCalendar Calendar Pro">
+    <meta property="og:type" content="website">
+</head>
+<body>
+
+<div class="toast-notification" id="networkToast">🔔 Core Node Synchronized.</div>
+
+<div class="phone-wrapper" id="login-container">
+    <div class="login-header">
+        <h1 style="color:var(--text-main); font-size:2rem; margin-bottom:18px; font-weight: 900;">Our Calendar</h1>
+        <img class="hero-img" src="OurCalendar.jpg" alt="OurCalendar planner book" onerror="this.style.display='none'">
+        <h2>"Plan Together,Make It Memorable"</h2>
+
+    </div>
+    
+    <div class="form-field-group">
+        <label for="loginUsername">USERNAME</label>
+        <input type="text" id="loginUsername" placeholder="Enter your name">
+    </div>
+    
+    <div class="form-field-group">
+        <label for="loginPassword">PASSWORD</label>
+        <input type="password" id="loginPassword" placeholder="Enter password">
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-login" onclick="executeProfileLogin()">Sign In</button>
+        <button class="btn-signup" onclick="executeSignUp()">Sign Up</button>
+    </div>
+</div>
+
+<div class="phone-wrapper hidden" id="app-container">
+    <div class="user-profile-banner">
+        <div class="user-info">ID: <span id="display-profile-tag" style="color:var(--accent-dark);">@user</span></div>
+        <div class="profile-actions-cluster">
+            <div class="theme-toggle-icon-btn" id="themeToggleNode" onclick="executeThemeToggle()" title="Toggle Visual System">🌓</div>
+            <div class="sync-status-indicator">Live</div>
+            <span class="logout-link" onclick="executeProfileLogout()">Exit</span>
+        </div>
+    </div>
+
+    <div class="metrics-bar admin-panel hidden" id="developerAdminPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-weight: 800; color: #b56576; font-size: 0.9rem;">🛡️ Developer Control Panel</span>
+        </div>
+        <ul id="adminUserList" style="list-style: none; margin: 0; padding: 0;"></ul>
+    </div>
+
+    <div class="header">
+        <h1>My Calendar </h1>
+        <img class="hero-img" src="OurCalendar.jpg" alt="OurCalendar planner book" onerror="this.style.display='none'">
+    </div>
+
+    <div class="alert-banner-node" id="todayAlertBanner">🎯 Active Today: No matching records detected.</div>
+
+    <div class="metrics-bar">
+        <div class="metric-item">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div><span id="metric-my-total">0</span>My Plans This Month</div>
+                <div id="hype-label" style="font-weight: 800; color: var(--accent-dark); font-size: 0.75rem;">Chill Month 🧊</div>
+            </div>
+            <div class="hype-bar-bg">
+                <div id="hype-bar-fill" class="hype-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="countdown-widget" id="nextEventCountdownWidget">
+        <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">⏳ Next Adventure Countdown</div>
+        <div id="countdown-title" style="font-size: 0.85rem; font-weight: 700; margin-top: 2px;">Plan Node</div>
+        <div class="countdown-timer" id="countdown-timer-display">00d 00h 00m 00s</div>
+    </div>
+
+    <div class="calendar-controls">
+        <button class="cal-btn" onclick="changeMonth(-1)">‹</button>
+        <h2 id="month-year-label">Month Year</h2>
+        <button class="cal-btn" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <div class="weekdays">
+        <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+    </div>
+    <div class="days-grid" id="calendar-days"></div>
+
+    <div class="agenda-section">
+        <div class="filter-toggle-container">
+            <div class="filter-pill active" id="filter-all-btn" onclick="setScopeFilter('all')">All OurCalendars</div>
+            <div class="filter-pill" id="filter-me-btn" onclick="setScopeFilter('me')">Just Me</div>
+            <div class="filter-pill" id="filter-user-btn" onclick="setScopeFilter('specific')">By User</div>
+        </div>
+        
+        <div id="user-filter-wrapper" class="hidden" style="margin-bottom: 12px; animation: fadeIn 0.25s ease;">
+            <select id="filterUserSelect" onchange="handleUserFilterChange()">
+                <option value="">-- Select a OurCalendar --</option>
+            </select>
+        </div>
+
+        <div class="interactive-section-header" id="agendaHeaderNode" onclick="toggleCollapseSection('agendaHeaderNode', 'agendaContentWrapper')">
+            <h3 id="selected-date-label">Events</h3>
+            <span class="collapse-chevron-indicator">▼</span>
+        </div>
+        
+        <div id="agendaContentWrapper" class="collapsible-view-node">
+            <div class="input-box-wrapper">
+                <div class="preset-chips-row">
+                    <span class="preset-chip" onclick="applyQuickPreset('🏃 Easy Run ', 'fitness', '20:00')"> 🏃Running </span>
+                    <span class="preset-chip" onclick="applyQuickPreset('🥾 Hiking Adventure Expedition', 'hiking', '06:30')">🥾 Hiking Trip</span>
+                    <span class="preset-chip" onclick="applyQuickPreset('🏕️ Campsite Assembly Gathering', 'camping', '17:00')">🏕️ Camping</span>
+                    <span class="preset-chip" onclick="applyQuickPreset('💼 Deep System Automation Sync', 'work', '09:00')">💼 Deep Work</span>
+                </div>
+
+                <input type="text" id="newEventInput" placeholder="What's the plan?">
+                
+                <div class="form-field-group" style="margin-bottom: 0;">
+                    <label style="display:flex; justify-content:space-between; align-items:center; margin-top: 10px;">
+                        <span>Include OurCalendars</span>
+                        <label class="checkbox-label select-all-btn">
+                            <input type="checkbox" id="selectAllOurCalendars" onchange="toggleSelectAll(this)">
+                            <span class="custom-checkmark"></span>
+                            Select All
+                        </label>
+                    </label>
+                    
+                    <div id="participantCheckboxes" class="participant-checkbox-group">
+                        </div>
+                </div>
+                <input type="text" id="newEventParticipant" class="hidden">
+                
+                <div class="date-range-row" style="margin-top: 10px;">
+                    <div>
+                        <label for="newEventStartDate">Start Date</label>
+                        <input type="date" id="newEventStartDate">
+                    </div>
+                    <div>
+                        <label for="newEventEndDate">End Date</label>
+                        <input type="date" id="newEventEndDate">
+                    </div>
+                </div>
+
+                <div class="form-row-three" style="margin-top: 8px;">
+                    <input type="time" id="newEventTime">
+                    <select id="newEventCategory">
+                        <option value="personal">🏠 Personal</option>
+                        <option value="work">💼 Work</option>
+                        <option value="camping">🏕️ Camping</option>
+                        <option value="hiking">🥾 Hiking</option>
+                        <option value="fitness">🏃 Run</option>
+                    </select>
+                    <div class="action-flex-wrapper">
+                        <button class="btn-add" id="submitActionBtn" onclick="handleFormSubmission()">Add</button>
+                        <button class="btn-cancel-edit hidden" id="cancelActionBtn" title="Cancel Edit" onclick="resetFormMutatorState()">✕</button>
+                    </div>
+                </div>
+            </div>
+            
+            <ul class="event-list" id="eventList"></ul>
+        </div>
+
+        <div class="interactive-section-header" id="incomingHeaderNode" onclick="toggleCollapseSection('incomingHeaderNode', 'incomingContentWrapper')">
+            <h3>Incoming Plan  </h3>
+            <span class="collapse-chevron-indicator">▼</span>
+        </div>
+        
+        <div id="incomingContentWrapper" class="collapsible-view-node">
+            <div class="search-bar-relative-container">
+                <input type="text" id="incomingSearchInput" placeholder="🔍 Search upcoming plans by text or @username..." oninput="evaluateSearchInputState()">
+                <span class="search-bar-clear-inline-btn" id="searchClearBtn" onclick="clearSearchQueryPipeline()">✕</span>
+            </div>
+            <ul class="event-list" id="incomingEventList" style="max-height: 180px;"></ul>
+        </div>
+    </div>
+</div>
+
+<div id="chat-widget-toggle" onclick="toggleChat()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+</div>
+
+<div id="chat-container">
+    <div class="chat-header">
+        <span>OurCalendarBot AI Engine</span>
+        <span style="cursor:pointer; font-size:1.2rem;" onclick="toggleChat()">×</span>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="msg bot">
+            Yo! Core system operational. 🤖<br><br>
+            <b>Available Commands:</b>
+            <ul class="bot-cmd-list">
+                <li><code>help</code> - Show manual list</li>
+                <li><code>today</code> - Briefing of your active plans</li>
+                <li><code>summary</code> - Summary breakdown for the active month</li>
+                <li><code>who is free on [Date]?</code> - Check tracking availability</li>
+                <li><code>add [Plan] on [Date]</code> - Add event</li>
+                <li><code>delete [Title]</code> - Drop specific plan</li>
+                <li><code>clear all my events</code> - Complete wipeout</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="chat-chips-scroll-row">
+        <button class="suggest-chip-btn" onclick="triggerChipCommand('today')">📊 Today's Briefing</button>
+        <button class="suggest-chip-btn" onclick="triggerChipCommand('summary')">📅 Monthly Summary</button>
+        <button class="suggest-chip-btn" onclick="triggerChipCommand('who is free on 20 June 2026?')">🔍 Who's free on 20 June?</button>
+        <button class="suggest-chip-btn" onclick="triggerChipCommand('help')">❓ Help Directory</button>
+    </div>
+
+    <div class="chat-input-area">
+        <input type="text" id="chatInput" placeholder="Type a command..." onkeypress="handleChatKey(event)">
+        <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
