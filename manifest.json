@@ -1,0 +1,13 @@
+{
+  "name": "Broski Calendar Pro",
+  "short_name": "Broski",
+  "description": "Shared adventure and planning calendar for Broskis.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "OurCalendar.jpg", "sizes": "192x192", "type": "image/jpeg" },
+    { "src": "OurCalendar.jpg", "sizes": "512x512", "type": "image/jpeg" }
+  ]
+}

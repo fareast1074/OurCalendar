@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OurCalendar | By F4REAST</title>
+    <link rel="manifest" href="manifest.json">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -52,17 +53,22 @@
     <div class="user-profile-banner">
         <div class="user-info">ID: <span id="display-profile-tag" style="color:var(--accent-dark);">@user</span></div>
         <div class="profile-actions-cluster">
+            <div class="theme-toggle-icon-btn" id="musicToggleBtn" onclick="toggleMusic()" title="Toggle Background Music">🎵</div>
             <div class="theme-toggle-icon-btn" id="themeToggleNode" onclick="executeThemeToggle()" title="Toggle Visual System">🌓</div>
+            <div class="theme-toggle-icon-btn" onclick="enableBrowserNotifications()" title="Enable Notifications">🔔</div>
             <div class="sync-status-indicator">Live</div>
             <span class="logout-link" onclick="executeProfileLogout()">Exit</span>
         </div>
     </div>
 
-    <div class="metrics-bar admin-panel hidden" id="developerAdminPanel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-weight: 800; color: #b56576; font-size: 0.9rem;">🛡️ Developer Control Panel</span>
+    <div class="metrics-bar admin-panel hidden" id="developerAdminPanel" style="padding: 0; overflow: hidden;">
+        <div class="interactive-section-header" id="developerHeaderNode" onclick="toggleCollapseSection('developerHeaderNode', 'developerContentWrapper')" style="padding: 12px; margin: 0; background: transparent; border: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+            <h3 style="font-weight: 800; color: var(--accent-dark); font-size: 0.9rem; margin: 0;">🛡️ Developer Control Panel</h3>
+            <span class="collapse-chevron-indicator">▼</span>
         </div>
-        <ul id="adminUserList" style="list-style: none; margin: 0; padding: 0;"></ul>
+        <div id="developerContentWrapper" class="collapsible-view-node" style="padding: 0 12px 12px 12px;">
+            <ul id="adminUserList" style="list-style: none; margin: 0; padding: 0;"></ul>
+        </div>
     </div>
 
     <div class="header">
@@ -85,7 +91,7 @@
     </div>
 
     <div class="countdown-widget" id="nextEventCountdownWidget">
-        <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">⏳ Next Event Countdown</div>
+        <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">⏳ Next Adventure Countdown</div>
         <div id="countdown-title" style="font-size: 0.85rem; font-weight: 700; margin-top: 2px;">Plan Node</div>
         <div class="countdown-timer" id="countdown-timer-display">00d 00h 00m 00s</div>
     </div>
@@ -94,6 +100,11 @@
         <button class="cal-btn" onclick="changeMonth(-1)">‹</button>
         <h2 id="month-year-label">Month Year</h2>
         <button class="cal-btn" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <div class="calendar-view-switcher">
+        <button class="view-pill active" data-view="month" onclick="setCalendarView('month')">Month</button>
+        <button class="view-pill" data-view="agenda" onclick="setCalendarView('agenda')">Agenda</button>
     </div>
 
     <div class="weekdays">
@@ -185,6 +196,18 @@
                 <input type="text" id="incomingSearchInput" placeholder="🔍 Search upcoming plans by text or @username..." oninput="evaluateSearchInputState()">
                 <span class="search-bar-clear-inline-btn" id="searchClearBtn" onclick="clearSearchQueryPipeline()">✕</span>
             </div>
+            <div class="advanced-search-grid">
+                <select id="incomingCategoryFilter" onchange="renderIncomingEventsPipeline()">
+                    <option value="">All categories</option>
+                    <option value="personal">Personal</option>
+                    <option value="work">Work</option>
+                    <option value="camping">Camping</option>
+                    <option value="hiking">Hiking</option>
+                    <option value="fitness">Run/Fitness</option>
+                    <option value="social">Social</option>
+                </select>
+                <input type="date" id="incomingStartFilter" onchange="renderIncomingEventsPipeline()" title="Starts after">
+            </div>
             <ul class="event-list" id="incomingEventList" style="max-height: 180px;"></ul>
         </div>
     </div>
@@ -228,6 +251,7 @@
     </div>
 </div>
 
+<audio id="ourCalendarAudioEngine" src="song.mp3" loop preload="none"></audio>
 <script src="script.js"></script>
 </body>
 </html>
