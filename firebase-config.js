@@ -1,4 +1,6 @@
-const firebaseConfig = {
+// Firebase configuration for the Trip Planner Firebase project.
+// This app uses Firebase Realtime Database (RTDB), not Cloud Firestore.
+export const firebaseConfig = {
   apiKey: "AIzaSyD7fcmeJe6C-XWLBMq213panWHZekLA_mo",
   authDomain: "trip-planner-edb3f.firebaseapp.com",
   databaseURL: "https://trip-planner-edb3f-default-rtdb.firebaseio.com",
