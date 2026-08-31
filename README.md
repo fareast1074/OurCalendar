@@ -1,30 +1,30 @@
-# Pastel Shared Calendar
+# Pastel Broski Calendar
 
-Mobile-first shared calendar for GitHub Pages + Firebase Firestore.
+This version copies the **Broski Planner concept** while keeping the pastel/light-maroon mobile design.
 
-## Login
+Included:
+- username + password only; no email and no Firebase Authentication
+- Firebase Realtime Database for users + shared events
+- real-time event syncing
+- invite/include users with checkboxes
+- edit/delete events
+- All / Just Me / By User filters
+- upcoming/incoming plan feed
+- next-event countdown
+- monthly plan metric
+- pastel themes with light maroon default
+- GitHub Pages / Android / iOS browser friendly UI
 
-The app uses a simple username + password stored in Firestore. There is **no email address** and **no Firebase Authentication provider** involved.
+## Firebase
+Use the Firebase project already configured in `firebase-config.js`. In Realtime Database, a simple open ruleset is required for the no-auth concept:
 
-Passwords are stored as SHA-256 hashes rather than raw text, but this is **not a secure authentication system** because Firestore is intentionally open in the supplied rules. Anyone who can access the app can potentially read or modify the Firestore data.
+```json
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
+```
 
-## Firebase setup
-
-1. Open your Firebase project: `trip-planner-edb3f`.
-2. Create/enable Cloud Firestore.
-3. Open Firestore Rules and paste the included `firestore.rules`.
-4. Keep `firebase-config.js` with your Firebase web config.
-5. Publish the folder to GitHub Pages.
-
-You do **not** need to enable Firebase Authentication.
-
-## Shared calendars
-
-- Create an account with a username and password.
-- Create a calendar and share its 6-character code.
-- Another user creates their own username/password and enters the code.
-- Events are stored in Firestore and sync in real time between users of that shared calendar.
-
-## Mobile
-
-The UI is designed for phone screens and can be added to the home screen from Safari or Chrome. The included manifest and service worker provide the PWA shell.
+This is intentionally a simple app and is **not secure authentication**. Passwords are stored directly to match the requested concept. Do not reuse real passwords.

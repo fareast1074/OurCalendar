@@ -1,152 +1,85 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#7B334D">
-  <meta name="description" content="Pastel Shared Calendar — mobile-first calendar with Firebase real-time sharing.">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%237B334D'/%3E%3Cpath d='M18 28h28v20H18z' fill='%23fff'/%3E%3Cpath d='M22 18v12M42 18v12M18 24h28' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
-  <title>Pastel Shared Calendar</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#8d3b5d">
+<meta name="description" content="Pastel shared calendar inspired by the Broski Planner concept.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/jpeg" href="Broski.jpg">
+<link rel="apple-touch-icon" href="Broski.jpg">
+<title>Pastel Broski Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
 <body>
-  <div id="app" class="app-shell">
-    <section id="authView" class="auth-screen">
-      <div class="auth-card">
-        <div class="brand-mark"><span>♥</span></div>
-        <p class="eyebrow">PASTEL PLANNER</p>
-        <h1 id="authTitle">Welcome back.</h1>
-        <p class="muted" id="authSubtitle">Sign in with your username and password. No email needed.</p>
-        <div class="auth-tabs" role="tablist" aria-label="Account mode">
-          <button type="button" class="auth-tab active" data-auth-mode="login">Sign in</button>
-          <button type="button" class="auth-tab" data-auth-mode="register">Create account</button>
-        </div>
-        <form id="authForm" class="stack-form">
-          <label>Username<input id="authUsername" type="text" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="alex"></label>
-          <label>Password<input id="authPassword" type="password" minlength="6" maxlength="72" autocomplete="current-password" required placeholder="••••••••"></label>
-          <button class="primary-btn" id="authSubmit" type="submit">Sign in</button>
-        </form>
-        <p class="setup-note">Your username is your account name. You do not need to provide an email address.</p>
-      </div>
-    </section>
-
-    <section id="mainView" class="main-view hidden">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">PASTEL PLANNER</p>
-          <h2 id="greetingTitle">Calendar</h2>
-        </div>
-        <div class="top-actions">
-          <button id="themeBtn" class="icon-btn" aria-label="Change pastel theme">◐</button>
-          <div class="profile-menu-wrap"><button id="avatarBtn" class="avatar-btn" aria-label="Your profile"><span id="avatarInitial">A</span></button><button id="logoutBtn" class="logout-btn" type="button">Sign out</button></div>
-        </div>
-      </header>
-
-      <main class="content">
-        <section class="calendar-card">
-          <div class="calendar-toolbar">
-            <button id="prevMonth" class="circle-btn" aria-label="Previous month">‹</button>
-            <div class="month-title-wrap">
-              <h3 id="monthTitle">Month</h3>
-              <button id="todayBtn" class="today-link">Today</button>
-            </div>
-            <button id="nextMonth" class="circle-btn" aria-label="Next month">›</button>
-          </div>
-          <div class="weekday-row" aria-hidden="true">
-            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-          </div>
-          <div id="calendarGrid" class="calendar-grid"></div>
-          <div class="legend"><span><i class="dot personal"></i> Personal</span><span><i class="dot shared"></i> Shared</span></div>
-        </section>
-
-        <section class="toolbar-card">
-          <div class="section-heading"><div><p class="eyebrow">CALENDARS</p><h3>Your spaces</h3></div><button id="addCalendarBtn" class="mini-btn">＋ New</button></div>
-          <div id="calendarList" class="calendar-list"></div>
-          <div class="join-row">
-            <input id="joinCodeInput" maxlength="8" placeholder="Enter share code">
-            <button id="joinBtn" class="secondary-btn">Join</button>
-          </div>
-        </section>
-
-        <section class="toolbar-card">
-          <div class="section-heading"><div><p class="eyebrow">UP NEXT</p><h3>Events</h3></div><button id="addEventTopBtn" class="mini-btn">＋ Event</button></div>
-          <div id="upcomingList" class="upcoming-list"></div>
-        </section>
-      </main>
-
-      <button id="fab" class="fab" aria-label="Add event">＋</button>
-      <nav class="bottom-nav">
-        <button class="nav-btn active"><span>▦</span><small>Calendar</small></button>
-        <button class="nav-btn" id="navToday"><span>○</span><small>Today</small></button>
-        <button class="nav-btn" id="navShare"><span>♧</span><small>Share</small></button>
-      </nav>
-    </section>
+<div id="toast" class="toast"></div>
+<section id="loginView" class="phone-shell auth-view">
+  <div class="hero-card">
+    <div class="brand-icon">♥</div>
+    <p class="eyebrow">PASTEL PLANNER</p>
+    <h1>Welcome back.</h1>
+    <p class="muted">Simple username and password. No email needed.</p>
+    <div class="auth-tabs"><button id="loginTab" class="auth-tab active" type="button">Sign in</button><button id="signupTab" class="auth-tab" type="button">Create account</button></div>
+    <form id="authForm">
+      <label>Username<input id="usernameInput" autocomplete="username" maxlength="24" placeholder="alex" required></label>
+      <label>Password<input id="passwordInput" autocomplete="current-password" type="password" minlength="4" maxlength="72" placeholder="••••••••" required></label>
+      <button class="primary-btn" id="authSubmit" type="submit">Sign in</button>
+    </form>
+    <p class="tiny-note">This simple app stores accounts and plans in Firebase Realtime Database.</p>
   </div>
+</section>
 
-  <div id="eventModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-backdrop" data-close="event"></div>
-    <div class="modal-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header"><div><p class="eyebrow" id="eventModalEyebrow">NEW EVENT</p><h3 id="eventModalTitle">Add event</h3></div><button class="close-btn" data-close="event">×</button></div>
-      <form id="eventForm" class="stack-form">
-        <input type="hidden" id="eventId">
-        <label>Title<input id="eventTitle" maxlength="120" required placeholder="Dinner, meeting, trip…"></label>
-        <div class="two-col">
-          <label>Date<input id="eventDate" type="date" required></label>
-          <label>Time<input id="eventTime" type="time" required></label>
-        </div>
-        <label>Calendar<select id="eventCalendar" required></select></label>
-        <label>Location<input id="eventLocation" maxlength="160" placeholder="Optional"></label>
-        <label>Notes<textarea id="eventNotes" maxlength="1000" rows="3" placeholder="Optional details"></textarea></label>
-        <div class="form-actions"><button class="secondary-btn" type="button" data-close="event">Cancel</button><button class="primary-btn" type="submit" id="saveEventBtn">Save event</button></div>
-        <button class="danger-link hidden" type="button" id="deleteEventBtn">Delete event</button>
-      </form>
-    </div>
+<section id="appView" class="hidden">
+  <div class="phone-shell app-shell">
+    <header class="topbar">
+      <div class="profile-block"><div class="avatar" id="avatar">A</div><div><p class="eyebrow">PASTEL BROSki</p><h2 id="greeting">Calendar</h2><span id="profileTag">@user</span></div></div>
+      <div class="top-actions"><button id="themeBtn" class="icon-btn" title="Pastel themes">◐</button><button id="logoutBtn" class="text-btn">Exit</button></div>
+    </header>
+
+    <main class="main-content">
+      <section class="hero-banner"><div><p class="eyebrow">WELCOME TO YOUR ADVENTURE</p><h3>Plan it. Share it. See it live.</h3><p>Built from the Broski Planner concept, simplified for everyday use.</p></div><div class="hero-badge">LIVE</div></section>
+
+      <section class="metric-card"><div class="metric-head"><div><strong id="metricMyPlans">0</strong><span>My plans this month</span></div><span id="hypeLabel">Chill month 🧊</span></div><div class="progress"><span id="hypeBar"></span></div></section>
+
+      <section class="countdown-card"><div class="eyebrow">NEXT ADVENTURE COUNTDOWN</div><strong id="countdownTitle">No upcoming plan</strong><div id="countdownTimer">00d 00h 00m 00s</div></section>
+
+      <section class="calendar-card">
+        <div class="calendar-toolbar"><button id="prevMonth" class="circle-btn">‹</button><div><h3 id="monthTitle">Month Year</h3><button id="todayBtn" class="today-link">Today</button></div><button id="nextMonth" class="circle-btn">›</button></div>
+        <div class="weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-heading"><div><p class="eyebrow">SELECTED DATE</p><h3 id="selectedDateLabel">Events</h3></div><button id="addEventBtn" class="mini-btn">＋ Add</button></div>
+        <div class="filter-row"><button class="filter-pill active" data-filter="all">All</button><button class="filter-pill" data-filter="me">Just me</button><button class="filter-pill" data-filter="specific">By user</button></div>
+        <select id="filterUserSelect" class="hidden"><option value="">Select a user</option></select>
+        <div id="quickPresets" class="chips"></div>
+        <ul id="eventList" class="event-list"></ul>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-heading"><div><p class="eyebrow">SHARED PEOPLE</p><h3>Include Broskis</h3></div><button id="selectAllBtn" class="mini-btn soft">Select all</button></div>
+        <div id="participantList" class="participant-list"></div>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-heading"><div><p class="eyebrow">INCOMING</p><h3>Plan feed</h3></div></div>
+        <input id="searchInput" class="search-input" placeholder="Search plans or @username…">
+        <ul id="incomingList" class="event-list compact"></ul>
+      </section>
+    </main>
+    <button id="fab" class="fab">＋</button>
+    <nav class="bottom-nav"><button class="nav-btn active" id="navCalendar">▦<small>Calendar</small></button><button class="nav-btn" id="navToday">○<small>Today</small></button><button class="nav-btn" id="navAdd">＋<small>Add</small></button></nav>
   </div>
+</section>
 
-  <div id="calendarModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-backdrop" data-close="calendar"></div>
-    <div class="modal-sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header"><div><p class="eyebrow">NEW SPACE</p><h3>Shared calendar</h3></div><button class="close-btn" data-close="calendar">×</button></div>
-      <form id="calendarForm" class="stack-form">
-        <label>Name<input id="calendarName" maxlength="80" required placeholder="Family, Work, Trip…"></label>
-        <label>Colour<select id="calendarColor"><option value="maroon">Light maroon</option><option value="lavender">Lavender</option><option value="sage">Sage</option><option value="butter">Butter</option><option value="sky">Sky</option><option value="peach">Peach</option></select></label>
-        <p class="help-text">After creating it, share the generated code with the people you want to sync with.</p>
-        <button class="primary-btn" type="submit">Create shared calendar</button>
-      </form>
-    </div>
-  </div>
+<div id="eventModal" class="modal hidden"><div class="backdrop" data-close></div><div class="sheet"><div class="handle"></div><div class="sheet-head"><div><p class="eyebrow" id="modalEyebrow">NEW EVENT</p><h3 id="modalTitle">Add event</h3></div><button class="close-btn" data-close>×</button></div>
+<form id="eventForm"><input type="hidden" id="eventId"><label>Plan title<input id="eventTitle" maxlength="120" required placeholder="Dinner, meeting, hiking…"></label><div class="two-col"><label>Start date<input id="startDate" type="date" required></label><label>End date<input id="endDate" type="date" required></label></div><div class="two-col"><label>Time<input id="eventTime" type="time"></label><label>Category<select id="eventCategory"><option value="personal">🏠 Personal</option><option value="work">💼 Work</option><option value="camping">🏕️ Camping</option><option value="hiking">🥾 Hiking</option><option value="fitness">🏃 Fitness</option><option value="social">🎉 Social</option></select></label></div><label>Notes<textarea id="eventNotes" rows="3" maxlength="500" placeholder="Optional details"></textarea></label><div class="form-actions"><button class="secondary-btn" type="button" data-close>Cancel</button><button class="primary-btn" type="submit">Save event</button></div><button class="danger-link hidden" id="deleteBtn" type="button">Delete event</button></form></div></div>
 
-  <div id="shareModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-backdrop" data-close="share"></div>
-    <div class="modal-sheet compact">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header"><div><p class="eyebrow">SHARE</p><h3 id="shareTitle">Calendar access</h3></div><button class="close-btn" data-close="share">×</button></div>
-      <p class="muted">Give this code to another person. They can sign in, enter the code, and the calendar will appear on their phone.</p>
-      <div class="share-code" id="shareCodeValue">------</div>
-      <button id="copyCodeBtn" class="primary-btn">Copy share code</button>
-      <div class="member-box"><p class="eyebrow">MEMBERS</p><div id="memberList"></div></div>
-    </div>
-  </div>
-
-  <div id="themePopover" class="theme-popover hidden">
-    <p class="eyebrow">PASTEL THEME</p>
-    <div class="theme-options">
-      <button data-theme="maroon"><i class="swatch maroon"></i>Rose Maroon</button>
-      <button data-theme="lavender"><i class="swatch lavender"></i>Lavender</button>
-      <button data-theme="sage"><i class="swatch sage"></i>Sage</button>
-      <button data-theme="butter"><i class="swatch butter"></i>Butter</button>
-      <button data-theme="sky"><i class="swatch sky"></i>Sky</button>
-      <button data-theme="peach"><i class="swatch peach"></i>Peach</button>
-    </div>
-  </div>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+<div id="themePopover" class="theme-popover hidden"><p class="eyebrow">PASTEL THEME</p><div class="theme-options"><button data-theme="maroon"><i class="swatch maroon"></i>Rose Maroon</button><button data-theme="lavender"><i class="swatch lavender"></i>Lavender</button><button data-theme="sage"><i class="swatch sage"></i>Sage</button><button data-theme="butter"><i class="swatch butter"></i>Butter</button><button data-theme="sky"><i class="swatch sky"></i>Sky</button><button data-theme="peach"><i class="swatch peach"></i>Peach</button></div></div>
+<script src="firebase-config.js"></script><script src="app.js"></script>
+</body></html>

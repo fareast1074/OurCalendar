@@ -1,10 +1,1 @@
-{
-  "name": "Pastel Shared Calendar",
-  "short_name": "Pastel Calendar",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#FBF8F9",
-  "theme_color": "#7B334D",
-  "orientation": "portrait",
-  "icons": []
-}
+{"name":"Pastel Broski Calendar","short_name":"Calendar","start_url":"./","display":"standalone","background_color":"#f4eef1","theme_color":"#8d3b5d","icons":[]}

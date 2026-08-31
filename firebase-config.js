@@ -1,7 +1,4 @@
-// Firebase configuration for the Trip Planner Firebase project.
-// This web config is safe to include in a client-side GitHub Pages app;
-// protect your data with Firebase Authentication and Firestore Security Rules.
-export const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyD7fcmeJe6C-XWLBMq213panWHZekLA_mo",
   authDomain: "trip-planner-edb3f.firebaseapp.com",
   databaseURL: "https://trip-planner-edb3f-default-rtdb.firebaseio.com",
