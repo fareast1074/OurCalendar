@@ -1,13 +1,57 @@
 {
-  "name": "Broski Calendar Pro",
-  "short_name": "Broski",
-  "description": "Shared adventure and planning calendar for Broskis.",
+  "id": "./",
+  "name": "OurCalendar - Shared Calendar",
+  "short_name": "OurCalendar",
+  "description": "A shared calendar with recurring events, comments, attachments, public holidays, and offline access.",
+  "lang": "en",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#fff7f8",
+  "theme_color": "#8f3f52",
+  "categories": ["productivity", "social", "utilities"],
   "icons": [
-    { "src": "OurCalendar.jpg", "sizes": "192x192", "type": "image/jpeg" },
-    { "src": "OurCalendar.jpg", "sizes": "512x512", "type": "image/jpeg" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open today",
+      "short_name": "Today",
+      "description": "Open today's calendar schedule",
+      "url": "./index.html?action=today",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Create event",
+      "short_name": "New event",
+      "description": "Open the calendar event form",
+      "url": "./index.html?action=new",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }

@@ -1,0 +1,140 @@
+OurCalendar Feature Upgrade - Version 5.0
+=========================================
+
+This release retains the recurring-event functions from Version 4 and adds
+three requested upgrades:
+
+8. Event comments and attachments
+13. Public holidays
+16. Mobile-friendly Progressive Web App (PWA)
+
+
+1. Event comments and attachments
+---------------------------------
+- Every event now has an Event Workspace button marked with a speech-bubble icon.
+- Signed-in users can post comments of up to 1,000 characters.
+- A user can delete their own comment. The event owner can delete any comment
+  attached to that event.
+- Users can upload files or save web links under the event.
+- File upload limit: 2 MB per file.
+- Maximum attachments: 12 per event.
+- Uploaded images show a preview; other file types show an appropriate icon.
+- The person who uploaded an attachment, or the event owner, can delete it.
+- Comments and link attachments can be added while offline and synchronize after
+  the connection returns.
+- File uploads require an internet connection.
+- For recurring schedules, comments and attachments belong to the complete
+  recurring series.
+- Deleting an event or recurring series also removes its comments and attachments.
+
+Firebase data path added:
+  event_collaboration_v1/{eventId}/comments
+  event_collaboration_v1/{eventId}/attachments
+
+The existing event path remains unchanged:
+  shared_events_v3
+
+Important Firebase note:
+The Realtime Database rules must allow the application to read and write the
+new event_collaboration_v1 path. Existing event records do not require migration.
+
+Attachment storage note:
+To remain compatible with the project's current Firebase Realtime Database
+setup, uploaded files are stored as encoded file data in that database. The
+2 MB file limit is intentional. For larger files, save a SharePoint, OneDrive,
+Google Drive, or other HTTPS link instead.
+
+
+2. Public holidays
+------------------
+- A Holidays control is available above the calendar.
+- Holiday display can be turned on or off.
+- Supported country selections:
+  Malaysia, Singapore, Indonesia, Japan, Australia, United Kingdom,
+  United States, Canada, Germany, France, and New Zealand.
+- Two display scopes are available:
+  Countrywide holidays
+  Include regional holidays
+- Holiday dates are marked directly on the monthly calendar.
+- Selecting a holiday date displays its holiday details in the daily agenda.
+- A monthly holiday summary and count are shown above the calendar.
+- Holiday data for each viewed year and country is cached locally for offline use.
+- The Refresh displayed year button retrieves updated dates.
+- Malaysia uses a Malaysia-specific state-aware holiday source.
+- Other selectable countries use the international holiday source.
+
+Holiday dates can be changed by official announcements. Use Refresh displayed
+year before relying on the calendar for critical scheduling.
+
+
+3. Mobile-friendly PWA
+----------------------
+- OurCalendar can be installed as an application on supported desktop and mobile
+  browsers.
+- Added application icons, maskable icons, an Apple touch icon, manifest metadata,
+  and Today/New Event application shortcuts.
+- Added a direct Install button when the browser makes installation available.
+- Added installation guidance when a direct prompt is not available.
+- Added a mobile bottom navigation bar for Today, New Event, and Holidays.
+- Added full-width mobile layout, safe-area support, touch-friendly controls, and
+  mobile bottom-sheet dialogs.
+- Added online, offline, syncing, and pending-change indicators.
+- Added an application update banner when a newer service worker is ready.
+- The application shell and latest locally cached calendar data remain available
+  when the device is offline.
+- Event creation, event editing, event deletion, comments, and link attachments
+  are queued while offline and synchronized when the connection returns.
+
+PWA deployment requirement:
+Open the project through HTTPS or localhost. Browser installation and service
+workers do not run when index.html is opened directly with a file:// address.
+
+Examples:
+  Production: host the folder on an HTTPS-enabled web server.
+  Local test: run a local HTTP server from the project folder and open localhost.
+
+
+Recurring-event compatibility
+-----------------------------
+The Version 4 recurrence capabilities remain available:
+- Daily, weekly, monthly, and yearly recurrence.
+- Custom intervals.
+- Multiple weekday selection for weekly events.
+- Never, end-date, and occurrence-count ending rules.
+- Calendar, agenda, incoming plans, filters, countdowns, and conflict checks
+  continue to recognize recurring occurrences.
+- Editing or deleting a recurring event continues to affect the complete series.
+
+
+Offline behavior
+----------------
+Cached and queued browser data uses the following localStorage keys:
+  ourcalendarCachedEventsV5
+  ourcalendarHolidayCacheV5
+  ourcalendarHolidaySettingsV5
+  ourcalendarOfflineQueueV5
+  ourcalendarCollaborationCacheV5
+
+The offline queue synchronizes in order after the browser reconnects. A Pending
+or Syncing indicator is shown until all queued changes have been written.
+
+
+Main files changed or added
+---------------------------
+Changed:
+  index.html
+  script.js
+  styles.css
+  service-worker.js
+  manifest.json
+
+Added:
+  icon-192.png
+  icon-512.png
+  icon-maskable-192.png
+  icon-maskable-512.png
+  apple-touch-icon.png
+
+Service-worker cache version:
+  ourcalendar-v5.0.0
+  ourcalendar-runtime-v5.0.0

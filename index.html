@@ -2,27 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OurCalendar | By F4REAST</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>OurCalendar | Shared Calendar</title>
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
     <!-- Styles and Icons -->
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/jpg" href="OurCalendar.jpg">
-    <link rel="apple-touch-icon" href="OurCalendar.jpg">
+    <link rel="stylesheet" href="styles.css?v=5.0.0">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#8f3f52">
+    <meta name="color-scheme" content="light dark">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="OurCalendar">
     
     <!-- SEO and Meta Tags -->
-    <meta name="description" content="OurCalendar Calendar Pro - Stay organized with F4REAST.">
-    <meta property="og:title" content="OurCalendar Calendar Pro">
+    <meta name="description" content="OurCalendar is an installable shared calendar with recurring events, comments, attachments, public holidays, and offline access.">
+    <meta property="og:title" content="OurCalendar Shared Calendar">
     <meta property="og:type" content="website">
+    <meta property="og:image" content="OurCalendar.jpg">
 </head>
 <body>
 
-<div class="toast-notification" id="networkToast">🔔 Core Node Synchronized.</div>
+<div class="toast-notification" id="networkToast" role="status" aria-live="polite">🔔 Core Node Synchronized.</div>
+
+<div class="app-update-banner hidden" id="appUpdateBanner" role="status">
+    <span>✨ A new OurCalendar version is ready.</span>
+    <button type="button" onclick="applyAppUpdate()">Update now</button>
+</div>
 
 <div class="phone-wrapper" id="login-container">
     <div class="login-header">
@@ -46,14 +58,20 @@
         <button class="btn-login" onclick="executeProfileLogin()">Sign In</button>
         <button class="btn-signup" onclick="executeSignUp()">Sign Up</button>
     </div>
+
+    <button class="pwa-install-cta hidden" id="loginPwaInstallButton" type="button" onclick="promptPwaInstall()">
+        📲 Install OurCalendar App
+    </button>
+    <div class="login-offline-note" id="loginOfflineNote">Open once online to prepare the calendar for offline use.</div>
 </div>
 
 <div class="phone-wrapper hidden" id="app-container">
     <div class="user-profile-banner">
         <div class="user-info">ID: <span id="display-profile-tag" style="color:var(--accent-dark);">@user</span></div>
         <div class="profile-actions-cluster">
-            <div class="theme-toggle-icon-btn" id="themeToggleNode" onclick="executeThemeToggle()" title="Toggle Visual System">🌓</div>
-            <div class="sync-status-indicator">Live</div>
+            <button class="profile-icon-button hidden" id="pwaInstallButton" type="button" onclick="promptPwaInstall()" title="Install OurCalendar">📲</button>
+            <button class="profile-icon-button" id="themeToggleNode" type="button" onclick="executeThemeToggle()" title="Toggle visual theme">🌓</button>
+            <div class="sync-status-indicator" id="networkStatusIndicator" title="Connection and synchronization status">Online</div>
             <span class="logout-link" onclick="executeProfileLogout()">Exit</span>
         </div>
     </div>
@@ -91,10 +109,58 @@
     </div>
 
     <div class="calendar-controls">
-        <button class="cal-btn" onclick="changeMonth(-1)">‹</button>
+        <button class="cal-btn" type="button" onclick="changeMonth(-1)" aria-label="Previous month">‹</button>
         <h2 id="month-year-label">Month Year</h2>
-        <button class="cal-btn" onclick="changeMonth(1)">›</button>
+        <button class="cal-btn" type="button" onclick="changeMonth(1)" aria-label="Next month">›</button>
     </div>
+
+    <div class="calendar-feature-toolbar">
+        <button class="calendar-tool-button" type="button" onclick="goToToday()">📍 Today</button>
+        <button class="calendar-tool-button" id="holidaySettingsButton" type="button" onclick="toggleHolidaySettings()">
+            🎌 Holidays <span class="tool-count-badge" id="holidayMonthCount">0</span>
+        </button>
+    </div>
+
+    <div class="holiday-settings-panel hidden" id="holidaySettingsPanel">
+        <div class="holiday-settings-heading">
+            <div>
+                <strong>Public holidays</strong>
+                <small id="holidayDataStatus">Loading holiday data…</small>
+            </div>
+            <label class="compact-switch" title="Show or hide public holidays">
+                <input type="checkbox" id="holidayEnabledToggle" checked onchange="handleHolidaySettingsChange()">
+                <span></span>
+            </label>
+        </div>
+        <div class="holiday-settings-grid">
+            <div>
+                <label for="holidayCountrySelect">Country</label>
+                <select id="holidayCountrySelect" onchange="handleHolidaySettingsChange()">
+                    <option value="MY">Malaysia</option>
+                    <option value="SG">Singapore</option>
+                    <option value="ID">Indonesia</option>
+                    <option value="JP">Japan</option>
+                    <option value="AU">Australia</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="NZ">New Zealand</option>
+                </select>
+            </div>
+            <div>
+                <label for="holidayScopeSelect">Holiday scope</label>
+                <select id="holidayScopeSelect" onchange="handleHolidaySettingsChange()">
+                    <option value="national">Countrywide holidays</option>
+                    <option value="all">Include regional holidays</option>
+                </select>
+            </div>
+        </div>
+        <button class="holiday-refresh-button" type="button" onclick="refreshHolidayData()">↻ Refresh displayed year</button>
+    </div>
+
+    <div class="holiday-month-summary hidden" id="holidayMonthSummary" aria-live="polite"></div>
 
     <div class="weekdays">
         <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
@@ -148,11 +214,71 @@
                 <div class="date-range-row" style="margin-top: 10px;">
                     <div>
                         <label for="newEventStartDate">Start Date</label>
-                        <input type="date" id="newEventStartDate">
+                        <input type="date" id="newEventStartDate" onchange="handleStartDateChange()">
                     </div>
                     <div>
                         <label for="newEventEndDate">End Date</label>
-                        <input type="date" id="newEventEndDate">
+                        <input type="date" id="newEventEndDate" onchange="updateRecurrenceSummary()">
+                    </div>
+                </div>
+
+                <div class="recurrence-panel" id="recurrencePanel">
+                    <div class="recurrence-header-row">
+                        <label for="newEventRecurrence">Repeat</label>
+                        <span class="recurrence-summary-pill" id="recurrenceSummaryBadge">Does not repeat</span>
+                    </div>
+
+                    <select id="newEventRecurrence" onchange="handleRecurrenceControlChange()">
+                        <option value="none">Does not repeat</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+
+                    <div id="recurrenceAdvancedOptions" class="recurrence-advanced hidden">
+                        <div class="recurrence-grid-row">
+                            <div class="recurrence-field">
+                                <label for="recurrenceInterval">Repeat every</label>
+                                <div class="recurrence-interval-control">
+                                    <input type="number" id="recurrenceInterval" min="1" max="99" value="1" inputmode="numeric" oninput="updateRecurrenceSummary()">
+                                    <span id="recurrenceIntervalUnit">week(s)</span>
+                                </div>
+                            </div>
+                            <div class="recurrence-field">
+                                <label for="recurrenceEndType">Ends</label>
+                                <select id="recurrenceEndType" onchange="handleRecurrenceEndTypeChange()">
+                                    <option value="never">Never</option>
+                                    <option value="date">On a date</option>
+                                    <option value="count">After occurrences</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="recurrence-field hidden" id="recurrenceWeekdayBlock">
+                            <label>Repeat on</label>
+                            <div class="weekday-selector" aria-label="Repeat on weekdays">
+                                <label class="weekday-chip"><input type="checkbox" class="recurrence-weekday-checkbox" value="0" onchange="updateRecurrenceSummary()"><span>Su</span></label>
+                                <label class="weekday-chip"><input type="checkbox" class="recurrence-weekday-checkbox" value="1" onchange="updateRecurrenceSummary()"><span>Mo</span></label>
+                                <label class="weekday-chip"><input type="checkbox" class="recurrence-weekday-checkbox" value="2" onchange="updateRecurrenceSummary()"><span>Tu</span></label>
+                                <label class="weekday-chip"><input type="checkbox" class="recurrence-weekday-checkbox" value="3" onchange="updateRecurrenceSummary()"><span>We</span></label>
+                                <label class="weekday-chip"><input type="checkbox" class="recurrence-weekday-checkbox" value="4" onchange="updateRecurrenceSummary()"><span>Th</span></label>
+                                <label class="weekday-chip"><input type="checkbox" class="recurrence-weekday-checkbox" value="5" onchange="updateRecurrenceSummary()"><span>Fr</span></label>
+                                <label class="weekday-chip"><input type="checkbox" class="recurrence-weekday-checkbox" value="6" onchange="updateRecurrenceSummary()"><span>Sa</span></label>
+                            </div>
+                        </div>
+
+                        <div class="recurrence-end-detail hidden" id="recurrenceUntilBlock">
+                            <label for="recurrenceUntilDate">Last occurrence starts on or before</label>
+                            <input type="date" id="recurrenceUntilDate" onchange="updateRecurrenceSummary()">
+                        </div>
+
+                        <div class="recurrence-end-detail hidden" id="recurrenceCountBlock">
+                            <label for="recurrenceCount">Number of occurrences</label>
+                            <input type="number" id="recurrenceCount" min="1" max="1000" value="10" inputmode="numeric" oninput="updateRecurrenceSummary()">
+                        </div>
+
+                        <div class="recurrence-helper" id="recurrenceHelperText">Editing or deleting a recurring event affects the whole series.</div>
                     </div>
                 </div>
 
@@ -190,6 +316,73 @@
     </div>
 </div>
 
+<nav class="mobile-app-nav" aria-label="Calendar quick actions">
+    <button type="button" onclick="goToToday()"><span>📍</span><small>Today</small></button>
+    <button type="button" onclick="focusNewEventForm()"><span>＋</span><small>New</small></button>
+    <button type="button" onclick="toggleHolidaySettings(true)"><span>🎌</span><small>Holidays</small></button>
+</nav>
+
+<div class="modal-overlay hidden" id="eventDetailModal" role="presentation" onclick="handleModalBackdropClick(event, 'eventDetailModal')">
+    <section class="event-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="eventDetailTitle">
+        <header class="modal-header-row">
+            <div>
+                <span class="modal-eyebrow">Event workspace</span>
+                <h2 id="eventDetailTitle">Event details</h2>
+            </div>
+            <button class="modal-close-button" type="button" onclick="closeEventDetails()" aria-label="Close event details">×</button>
+        </header>
+
+        <div class="event-detail-summary" id="eventDetailSummary"></div>
+
+        <section class="collaboration-section">
+            <div class="collaboration-heading">
+                <div>
+                    <h3>💬 Comments</h3>
+                    <small>Everyone in the calendar can add an update.</small>
+                </div>
+                <span class="section-count-badge" id="eventCommentCount">0</span>
+            </div>
+            <div class="comments-list" id="eventCommentsList"></div>
+            <div class="comment-composer">
+                <textarea id="eventCommentInput" maxlength="1000" rows="3" placeholder="Write a comment or update…"></textarea>
+                <button class="modal-primary-button" id="addCommentButton" type="button" onclick="addEventComment()">Post comment</button>
+            </div>
+        </section>
+
+        <section class="collaboration-section">
+            <div class="collaboration-heading">
+                <div>
+                    <h3>📎 Attachments</h3>
+                    <small>Upload files up to 2 MB or save a web link.</small>
+                </div>
+                <span class="section-count-badge" id="eventAttachmentCount">0</span>
+            </div>
+            <div class="attachment-add-panel">
+                <input type="file" id="eventAttachmentFile" aria-label="Choose an attachment">
+                <button class="modal-secondary-button" id="uploadAttachmentButton" type="button" onclick="uploadEventAttachment()">Upload file</button>
+                <div class="attachment-or-divider"><span>or add a link</span></div>
+                <input type="url" id="eventAttachmentLink" placeholder="https://example.com/document">
+                <button class="modal-secondary-button" type="button" onclick="addEventLinkAttachment()">Add link</button>
+            </div>
+            <div class="attachments-list" id="eventAttachmentsList"></div>
+        </section>
+    </section>
+</div>
+
+<div class="modal-overlay hidden" id="pwaHelpModal" role="presentation" onclick="handleModalBackdropClick(event, 'pwaHelpModal')">
+    <section class="pwa-help-dialog" role="dialog" aria-modal="true" aria-labelledby="pwaHelpTitle">
+        <header class="modal-header-row">
+            <div>
+                <span class="modal-eyebrow">Installable app</span>
+                <h2 id="pwaHelpTitle">Install OurCalendar</h2>
+            </div>
+            <button class="modal-close-button" type="button" onclick="closePwaHelp()" aria-label="Close installation help">×</button>
+        </header>
+        <div id="pwaHelpContent" class="pwa-help-content"></div>
+        <button class="modal-primary-button full-width-button" type="button" onclick="closePwaHelp()">Done</button>
+    </section>
+</div>
+
 <div id="chat-widget-toggle" onclick="toggleChat()">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
 </div>
@@ -209,6 +402,7 @@
                 <li><code>summary</code> - Summary breakdown for the active month</li>
                 <li><code>who is free on [Date]?</code> - Check tracking availability</li>
                 <li><code>add [Plan] on [Date]</code> - Add event</li>
+                <li><code>Repeat controls</code> - Set daily, weekly, monthly, or yearly recurrence in the event form</li>
                 <li><code>delete [Title]</code> - Drop specific plan</li>
                 <li><code>clear all my events</code> - Complete wipeout</li>
             </ul>
@@ -228,6 +422,6 @@
     </div>
 </div>
 
-<script src="script.js"></script>
+<script src="script.js?v=5.0.0"></script>
 </body>
 </html>
