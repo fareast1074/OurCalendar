@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>OurCalendar | Shared Calendar</title>
+    <title>OurCalendar | Shared Calendar & Future Goals</title>
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
     <!-- Styles and Icons -->
-    <link rel="stylesheet" href="styles.css?v=5.0.0">
+    <link rel="stylesheet" href="styles.css?v=5.1.0">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
@@ -107,6 +107,20 @@
         <div id="countdown-title" style="font-size: 0.85rem; font-weight: 700; margin-top: 2px;">Plan Node</div>
         <div class="countdown-timer" id="countdown-timer-display">00d 00h 00m 00s</div>
     </div>
+
+    <section class="future-goals-panel" aria-labelledby="futureGoalsTitle">
+        <div class="future-goals-heading"><div><div class="future-goals-eyebrow">OUR NEXT CHAPTER</div><h2 id="futureGoalsTitle">Future Goals 💍</h2><p>Small steps today, beautiful memories tomorrow.</p></div><div class="goals-total-pill" id="goalsProgressLabel">0 / 0 done</div></div>
+        <div class="goals-progress-track"><div class="goals-progress-fill" id="goalsProgressFill"></div></div>
+        <div class="future-goals-list" id="futureGoalsList" aria-live="polite"></div>
+        <div class="goal-add-form">
+            <div class="goal-form-title">＋ Add a savings goal</div>
+            <input type="text" id="goalNameInput" maxlength="60" placeholder="e.g. Wedding photographer">
+            <div class="goal-input-row"><input type="number" id="goalTargetInput" min="0" step="0.01" inputmode="decimal" placeholder="Target (RM)"><input type="number" id="goalSavedInput" min="0" step="0.01" inputmode="decimal" placeholder="Saved (RM)"></div>
+            <input type="date" id="goalDateInput" aria-label="Goal target date (optional)">
+            <button class="goal-add-button" type="button" onclick="addFutureGoal()">Add goal</button>
+        </div>
+        <div class="goals-private-note">🔒 Goals are saved to your own profile.</div>
+    </section>
 
     <div class="calendar-controls">
         <button class="cal-btn" type="button" onclick="changeMonth(-1)" aria-label="Previous month">‹</button>
@@ -422,6 +436,6 @@
     </div>
 </div>
 
-<script src="script.js?v=5.0.0"></script>
+<script src="script.js?v=5.1.0"></script>
 </body>
 </html>

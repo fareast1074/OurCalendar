@@ -1658,3 +1658,40 @@ body:not(.app-active) #chat-container {
     .mobile-app-nav { display: none; }
     body.app-active .mobile-app-nav { display: grid; }
 }
+
+/* Future goals and wedding savings checklist */
+.future-goals-panel{margin:18px 0 24px;padding:18px 16px;border:1px solid var(--border-glow);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(250,231,238,.72));box-shadow:var(--shadow)}
+body.dark-mode .future-goals-panel{background:linear-gradient(145deg,rgba(38,31,40,.92),rgba(50,35,47,.82))}
+.future-goals-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.future-goals-eyebrow{font-size:.63rem;letter-spacing:1.2px;font-weight:800;color:var(--accent-dark);margin-bottom:4px}
+.future-goals-heading h2{font-size:1.2rem;font-weight:800}
+.future-goals-heading p{font-size:.73rem;color:var(--text-muted);margin-top:4px}
+.goals-total-pill{white-space:nowrap;padding:7px 10px;border-radius:30px;background:rgba(181,101,118,.12);color:var(--accent-dark);font-size:.7rem;font-weight:800}
+.goals-progress-track,.goal-item-progress{height:7px;border-radius:20px;background:rgba(143,63,82,.12);overflow:hidden}
+.goals-progress-track{margin:14px 0}
+.goals-progress-fill,.goal-item-progress>div{height:100%;border-radius:20px;background:var(--accent-gradient);transition:width .25s ease}
+.future-goals-list{display:grid;gap:10px}
+.goals-empty-state{padding:18px 12px;text-align:center;color:var(--text-muted);font-size:.8rem;border:1px dashed var(--accent-soft);border-radius:14px}
+.future-goal-card{padding:13px;border-radius:16px;background:rgba(255,255,255,.7);border:1px solid var(--border-subtle)}
+body.dark-mode .future-goal-card{background:rgba(255,255,255,.045)}
+.goal-card-top,.goal-amount-row,.goal-card-bottom,.goal-update-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.goal-check-label{display:flex;align-items:center;gap:9px;min-width:0;cursor:pointer}
+.goal-check-label input{position:absolute;opacity:0;width:1px;height:1px}
+.goal-checkmark{width:20px;height:20px;flex:0 0 20px;border:1.5px solid var(--accent-soft);border-radius:7px;display:grid;place-items:center}
+.goal-check-label input:checked+.goal-checkmark{background:var(--accent-gradient);border-color:transparent}
+.goal-check-label input:checked+.goal-checkmark:after{content:'✓';color:#fff;font-size:13px;font-weight:800}
+.goal-name{font-size:.86rem;font-weight:750;overflow-wrap:anywhere}
+.goal-is-complete .goal-name{text-decoration:line-through;color:var(--text-muted)}
+.goal-delete-button{border:0;background:transparent;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:0 4px}
+.goal-amount-row{justify-content:flex-start;margin:11px 0 7px;font-size:.72rem;color:var(--text-muted)}
+.goal-amount-row strong{font-size:.95rem;color:var(--accent-dark)}
+.goal-item-progress{height:6px}
+.goal-card-bottom{margin-top:7px;font-size:.66rem;color:var(--text-muted)}
+.goal-update-row{margin-top:11px;padding-top:9px;border-top:1px solid var(--border-subtle);font-size:.69rem;color:var(--text-muted)}
+.goal-update-row input{width:112px;padding:7px 9px;border-radius:9px;border:1px solid var(--border-subtle);background:var(--card-bg);color:var(--text-main);font-size:.75rem}
+.goal-add-form{margin-top:14px;padding:13px;border-radius:16px;background:rgba(181,101,118,.07);display:grid;gap:8px}
+.goal-form-title{font-size:.78rem;font-weight:800;margin-bottom:2px}
+.goal-add-form input{width:100%;min-width:0;padding:10px 11px;border:1px solid var(--border-subtle);border-radius:10px;background:var(--card-bg);color:var(--text-main);font-size:.8rem}
+.goal-input-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.goal-add-button{border:0;border-radius:11px;padding:11px;background:var(--accent-gradient);color:white;font-weight:800;font-size:.8rem;cursor:pointer}
+.goals-private-note{text-align:center;margin-top:10px;color:var(--text-muted);font-size:.64rem}

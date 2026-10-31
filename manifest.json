@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "OurCalendar - Shared Calendar",
+  "name": "OurCalendar - Shared Calendar & Future Goals",
   "short_name": "OurCalendar",
-  "description": "A shared calendar with recurring events, comments, attachments, public holidays, and offline access.",
+  "description": "A shared calendar with personal future goals, savings checklists, and offline access.",
   "lang": "en",
   "start_url": "./index.html",
   "scope": "./",

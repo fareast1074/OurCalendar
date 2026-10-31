@@ -1,6 +1,6 @@
 const CACHE_PREFIX = 'ourcalendar-';
-const CACHE_NAME = `${CACHE_PREFIX}v5.0.0`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v5.0.0`;
+const CACHE_NAME = `${CACHE_PREFIX}v5.1.0`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v5.1.0`;
 const APP_SHELL = [
   './',
   './index.html',

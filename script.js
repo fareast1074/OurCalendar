@@ -1343,6 +1343,7 @@ async function executeProfileLogin() {
 }
 
 function bootApplicationView() {
+    loadFutureGoals();
     document.body.classList.add('app-active');
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('app-container').classList.remove('hidden');
@@ -1484,6 +1485,8 @@ function deleteUserProfile(targetUsername) {
 
 function executeProfileLogout() {
     closeEventDetails();
+    if (futureGoalsListener) { futureGoalsListener.off(); futureGoalsListener = null; }
+    futureGoals = [];
     document.body.classList.remove('app-active');
     localStorage.removeItem('ourcalendarSharedCloudUser');
     currentUser = null;
@@ -3052,3 +3055,87 @@ window.addEventListener('keydown', event => {
     if (!document.getElementById('eventDetailModal')?.classList.contains('hidden')) closeEventDetails();
     else if (!document.getElementById('pwaHelpModal')?.classList.contains('hidden')) closePwaHelp();
 });
+
+// Personal Future Goals — stored separately for each signed-in profile.
+let futureGoals = [];
+let futureGoalsListener = null;
+const FUTURE_GOALS_CACHE_PREFIX = 'ourcalendarFutureGoalsV1_';
+function getFutureGoalsCacheKey() { return `${FUTURE_GOALS_CACHE_PREFIX}${currentUser || 'guest'}`; }
+function escapeGoalText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+function formatGoalCurrency(value) {
+    return Number(value || 0).toLocaleString('en-MY', {style:'currency',currency:'MYR',maximumFractionDigits:2});
+}
+function renderFutureGoals() {
+    const list = document.getElementById('futureGoalsList');
+    if (!list) return;
+    const completed = futureGoals.filter(goal => goal.completed).length, total = futureGoals.length;
+    document.getElementById('goalsProgressLabel').textContent = `${completed} / ${total} done`;
+    document.getElementById('goalsProgressFill').style.width = `${total ? completed / total * 100 : 0}%`;
+    if (!total) { list.innerHTML = '<div class="goals-empty-state">Your future starts with one little goal. Add your first one below ✨</div>'; return; }
+    list.innerHTML = futureGoals.map(goal => {
+        const target = Math.max(0, Number(goal.target)||0), saved = Math.max(0, Number(goal.saved)||0);
+        const percent = target > 0 ? Math.min(100, saved / target * 100) : (goal.completed ? 100 : 0);
+        const dateText = goal.targetDate ? `Target: ${new Date(`${goal.targetDate}T00:00:00`).toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})}` : 'No target date';
+        const id = escapeGoalText(goal.id);
+        return `<article class="future-goal-card ${goal.completed?'goal-is-complete':''}">
+          <div class="goal-card-top"><label class="goal-check-label"><input type="checkbox" ${goal.completed?'checked':''} onchange="toggleFutureGoal('${id}',this.checked)"><span class="goal-checkmark"></span><span class="goal-name">${escapeGoalText(goal.name)}</span></label><button class="goal-delete-button" type="button" onclick="deleteFutureGoal('${id}')" aria-label="Delete goal">×</button></div>
+          <div class="goal-amount-row"><strong>${formatGoalCurrency(saved)}</strong><span>of ${formatGoalCurrency(target)}</span></div>
+          <div class="goal-item-progress"><div style="width:${percent}%"></div></div>
+          <div class="goal-card-bottom"><span>${Math.round(percent)}% saved</span><span>${dateText}</span></div>
+          <div class="goal-update-row"><label for="goalSaved_${id}">Update saved (RM)</label><input id="goalSaved_${id}" type="number" min="0" step="0.01" value="${saved}" inputmode="decimal" onchange="updateFutureGoalSaved('${id}',this.value)"></div>
+        </article>`;
+    }).join('');
+}
+async function persistFutureGoals() {
+    if (!currentUser) return;
+    localStorage.setItem(getFutureGoalsCacheKey(), JSON.stringify(futureGoals)); renderFutureGoals();
+    try {
+        const result = await writePathWithOfflineSupport(`user_future_goals/${currentUser}`,futureGoals,{description:`Save future goals for @${currentUser}`});
+        if (result.queued) triggerToastAlert('Goals saved on this device — sync pending');
+    } catch(error) { console.error('Unable to save future goals.',error); triggerToastAlert('Could not sync goals. Your device copy is kept.'); }
+}
+function loadFutureGoals() {
+    if (!currentUser) return;
+    const hasLocalGoalsCache = localStorage.getItem(getFutureGoalsCacheKey()) !== null;
+    try { const cached=JSON.parse(localStorage.getItem(getFutureGoalsCacheKey())||'[]'); futureGoals=Array.isArray(cached)?cached:[]; } catch(_) { futureGoals=[]; }
+    if (!hasLocalGoalsCache) {
+        futureGoals = [
+            {id:'starter_kahwin',name:'Tabung Kahwin',target:0,saved:0,targetDate:'',completed:false},
+            {id:'starter_hantaran',name:'Duit Hantaran',target:0,saved:0,targetDate:'',completed:false},
+            {id:'starter_mas_kahwin',name:'Mas Kahwin',target:0,saved:0,targetDate:'',completed:false}
+        ];
+    }
+    renderFutureGoals();
+    if (futureGoalsListener) { futureGoalsListener.off(); futureGoalsListener=null; }
+    if (!database) { localStorage.setItem(getFutureGoalsCacheKey(),JSON.stringify(futureGoals)); return; }
+    futureGoalsListener=database.ref(`user_future_goals/${currentUser}`);
+    futureGoalsListener.on('value',snapshot=>{
+        if (!snapshot.exists()) {
+            if (!hasLocalGoalsCache) persistFutureGoals();
+            return;
+        }
+        const remote=snapshot.val();
+        futureGoals=Array.isArray(remote)?remote.filter(Boolean):(remote&&typeof remote==='object'?Object.values(remote):[]);
+        localStorage.setItem(getFutureGoalsCacheKey(),JSON.stringify(futureGoals)); renderFutureGoals();
+    },error=>console.warn('Future goals sync unavailable:',error));
+}
+function addFutureGoal() {
+    const nameInput=document.getElementById('goalNameInput'), targetInput=document.getElementById('goalTargetInput'), savedInput=document.getElementById('goalSavedInput'), dateInput=document.getElementById('goalDateInput');
+    const name=nameInput.value.trim(), target=Number(targetInput.value||0), saved=Number(savedInput.value||0);
+    if (!name) { alert('Please enter a goal name.'); nameInput.focus(); return; }
+    if (!Number.isFinite(target)||!Number.isFinite(saved)||target<0||saved<0) { alert('Please enter valid amounts.'); return; }
+    futureGoals.push({id:`goal_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,name,target,saved,targetDate:dateInput.value||'',completed:false,createdAt:Date.now()});
+    nameInput.value=''; targetInput.value=''; savedInput.value=''; dateInput.value=''; persistFutureGoals();
+}
+function toggleFutureGoal(id,checked) { const goal=futureGoals.find(item=>item.id===id); if (!goal)return; goal.completed=checked; persistFutureGoals(); }
+function updateFutureGoalSaved(id,value) {
+    const goal=futureGoals.find(item=>item.id===id); if(!goal)return;
+    const amount=Number(value); if(!Number.isFinite(amount)||amount<0){alert('Enter a valid saved amount.');renderFutureGoals();return;}
+    goal.saved=amount; persistFutureGoals();
+}
+function deleteFutureGoal(id) {
+    const goal=futureGoals.find(item=>item.id===id); if(!goal||!confirm(`Delete "${goal.name}"?`))return;
+    futureGoals=futureGoals.filter(item=>item.id!==id); persistFutureGoals();
+}
